@@ -1,0 +1,66 @@
+package com.app.pandemicnet.model;
+
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "entries")
+@Data
+public class Entry {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "data_centre_id", nullable = false)
+    private DataLocation dataCentre;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Column(nullable = false)
+    private LocalDateTime timestamp = LocalDateTime.now();
+
+    @PrePersist
+    public void prePersist() {
+        if (timestamp == null) {
+            timestamp = LocalDateTime.now();
+        }
+    }
+
+    public DataLocation getDataCentre() {
+        return dataCentre;
+    }
+
+    public void setDataCentre(DataLocation dataCentre) {
+        this.dataCentre = dataCentre;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
+}

@@ -1,0 +1,65 @@
+package com.app.pandemicnet.config;
+
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import com.app.pandemicnet.config.UserIdAuthorizationManager;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final UserIdAuthorizationManager userIdAuthorizationManager;
+
+    @Autowired
+    public SecurityConfig(@Lazy JwtAuthenticationFilter jwtAuthenticationFilter, UserIdAuthorizationManager userIdAuthorizationManager) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.userIdAuthorizationManager = userIdAuthorizationManager;
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/swagger-ui/**",         // for the Swagger UI frontend
+                                "/v3/api-docs/**",        // for the OpenAPI JSON
+                                "/swagger-ui.html"        // optional for old-style access
+                        ).permitAll()
+                        .requestMatchers("api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/admin/**", "/api/reports/**", "/api/graph/at-risk", "/api/risk/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users/{id}").access(userIdAuthorizationManager)
+                        .requestMatchers("/api/data-centres/**", "/api/entries/**", "/api/notifications").hasAnyRole("USER", "ADMIN")
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+}
