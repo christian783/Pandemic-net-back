@@ -37,3 +37,6 @@ build/
 .env
 =======
 >>>>>>> b01f80978e572bab3b19ec1cac6d80f473f913d5
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
